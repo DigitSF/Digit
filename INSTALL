@@ -1,0 +1,9 @@
+Building Digit
+
+See doc/readme-qt.rst for instructions on building Digit QT,
+the intended-for-end-users, nice-graphical-interface, reference
+implementation of Digit.
+
+See doc/build-*.txt for instructions on building Digitd,
+the intended-for-services, no-graphical-interface, reference
+implementation of Digit.
