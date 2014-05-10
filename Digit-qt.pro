@@ -7,6 +7,8 @@ CONFIG += no_include_pwd
 CONFIG += thread
 CONFIG += static
 
+USE_IPV6=0
+USE_QRCODE=1
 
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
@@ -342,8 +344,6 @@ HEADERS += src/qt/qrcodedialog.h
 SOURCES += src/qt/qrcodedialog.cpp
 FORMS += src/qt/forms/qrcodedialog.ui
 }
-
-CODECFORTR = UTF-8
 
 # for lrelease/lupdate
 # also add new translations to src/qt/bitcoin.qrc under translations/
