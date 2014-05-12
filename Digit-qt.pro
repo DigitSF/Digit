@@ -7,8 +7,6 @@ CONFIG += no_include_pwd
 CONFIG += thread
 CONFIG += static
 
-USE_IPV6=0
-USE_QRCODE=1
 
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
