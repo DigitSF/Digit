@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 
 Digit (DIG) is a hybrid PoW-PoS-based cryptocurrency.
@@ -28,3 +29,9 @@ if they don't match the project's coding conventions or are controversial.
 The master branch is regularly built and tested, but is not guaranteed
 to be completely stable. Tags are regularly created to indicate new
 official, stable release versions of Digit.
+=======
+Digit
+=====
+
+Cryptocurrency
+>>>>>>> e268a0083c2b721bce93e8e4b8bbc691b91fece6
