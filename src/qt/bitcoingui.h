@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QSystemTrayIcon>
+#include <stdint.h>
 
 class TransactionTableModel;
 class ClientModel;
@@ -101,6 +102,8 @@ private:
     RPCConsole *rpcConsole;
 
     QMovie *syncIconMovie;
+	
+	uint64_t nWeight;
 
     /** Create the main UI actions. */
     void createActions();
@@ -181,7 +184,7 @@ private slots:
     void showNormalIfMinimized(bool fToggleHidden = false);
     /** simply calls showNormalIfMinimized(true) for use in SLOT() macro */
     void toggleHidden();
-
+	void updateWeight();
     void updateStakingIcon();
 };
 

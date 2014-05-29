@@ -4,16 +4,15 @@ Digit (DIG) is a hybrid PoW-PoS-based cryptocurrency.
 
 	Specifications:
 
-	- Scrypt mining algorithm
+	- X13 mining algorithm
 	- 60 seconds block target
-	- Network hash rate adaptable PoW reward
-	- Mining reward smooth decreasing factor
+	- Difficulty dependent PoW reward
+	- Mining reward decreasing multiplier
 	- Difficulty retargets every block
-	- Variable PoS interest.
-	- 3 conformations for transactions
+	- Variable PoS interest from 1% monthly
+	- 6 conformations for transactions
 	- 60 confirmations for mined/staked blocks
-	- Ports: 11100 (connection) and 11101 (RPC)
-	
+	- Ports: 11100 (connection) and 11101 (RPC)	
 	
 
 Development process

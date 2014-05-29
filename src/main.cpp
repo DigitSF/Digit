@@ -36,15 +36,16 @@ map<uint256, CBlockIndex*> mapBlockIndex;
 set<pair<COutPoint, unsigned int> > setStakeSeen;
 libzerocoin::Params* ZCParams;
 
-CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // "standard" scrypt target limit for proof of work, results with 0,000244140625 proof-of-work difficulty
+CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // "standard" target limit for proof of work, results with 0,000244140625 proof-of-work difficulty
 CBigNum bnProofOfStakeLimit(~uint256(0) >> 20);
 CBigNum bnProofOfWorkLimitTestNet(~uint256(0) >> 16);
 
 unsigned int nTargetSpacing = 60; // 60 sec
-unsigned int nStakeMinAge = 24 * 60 * 60; // 1 day
+unsigned int nStakeMinAge = 8 * 60 * 60; // 8 hours
 unsigned int nStakeMaxAge = -1; // unlimited
-unsigned int nModifierInterval = 30 * 60; // time to elapse before new modifier is computed
+unsigned int nModifierInterval = 10 * 60; // time to elapse before new modifier is computed
 
+int64_t DigitSupport;
 int nCoinbaseMaturity = 50;
 CBlockIndex* pindexGenesisBlock = NULL;
 int nBestHeight = -1;
@@ -1006,17 +1007,21 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees, uint256 prevHash)
     } 
 
 		
-	double Dayz = 3.34;			
-    int exponent = (nHeight / 2000);
+	double Dayz = 3.65;			
+    int exponent = (nHeight / 2500);
     for(int i=0;i<exponent;i++)
 	{
-		Dayz -= 0.003;		
-	}		
+		Dayz -= 0.01;		
+	}	
+	if(Dayz > 0.01)
+	{
+	Dayz = 0.01;
+	}
 	if(nHeight == 1)
 	{
-		nSubsidy = 170000000 * COIN;
+		nSubsidy = 13752000 * COIN; 	// All of this goes to original Digit miners and pools.
 	}
-	else if(nHeight < 60000 && nSubsidy < 1000) 		
+	else if(nHeight < 7500 && nSubsidy < 1000) 		
 	{ 
 	   nSubsidy = 1000 * COIN;
 	}
@@ -1024,23 +1029,30 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees, uint256 prevHash)
 	{
 		nSubsidy = Dayz * diff * COIN;
 	}
-	
+	if(nHeight==1)
+	{
+	DigitSupport = 0;
+	}
+	else
+	{
+	 DigitSupport = nSubsidy / 80;
+	}
 	if (fDebug && GetBoolArg("-printcreation"))
         printf("GetProofOfWorkReward() : create=%s nSubsidy=%"PRId64"\n", FormatMoney(nSubsidy).c_str(), nSubsidy);
 		
 	return nSubsidy + nFees;	
 }
 
-const int MONTHLY_BLOCKCOUNT = 60000; 
+const int MONTHLY_BLOCKCOUNT = 75000; 
 int64_t GetProofOfStakeReward(int64_t nCoinAge, int64_t nFees, int nHeight)
 {
     unsigned int MONTHLY_MULTIPLIER = 1;
 
-    for (int MONTH = 1; MONTH < 71; MONTH++) 
+    for (int MONTH = 1; MONTH < 23; MONTH++) 
 	{
         if(nHeight < MONTH * MONTHLY_BLOCKCOUNT) 
 		{
-		MONTHLY_MULTIPLIER = ((MONTH<36) ? MONTH : 36 - MONTH%36);
+		MONTHLY_MULTIPLIER = ((MONTH<12) ? MONTH : 12 - MONTH%12);
         }
     }
 	if (MONTHLY_MULTIPLIER < 1)
@@ -1104,37 +1116,7 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
     return pindex;
 }
 
-static unsigned int GetNextTargetRequiredV1(const CBlockIndex* pindexLast, bool fProofOfStake)
-{
-    CBigNum bnTargetLimit = fProofOfStake ? bnProofOfStakeLimit : bnProofOfWorkLimit;
-
-    if (pindexLast == NULL)
-        return bnTargetLimit.GetCompact(); // genesis block
-
-    const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast, fProofOfStake);
-    if (pindexPrev->pprev == NULL)
-        return bnTargetLimit.GetCompact(); // first block
-    const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, fProofOfStake);
-    if (pindexPrevPrev->pprev == NULL)
-        return bnTargetLimit.GetCompact(); // second block
-
-    int64_t nActualSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
-
-    // ppcoin: target change every block
-    // ppcoin: retarget with exponential moving toward target spacing
-    CBigNum bnNew;
-    bnNew.SetCompact(pindexPrev->nBits);
-    int64_t nInterval = nTargetTimespan / nTargetSpacing;
-    bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
-    bnNew /= ((nInterval + 1) * nTargetSpacing);
-
-    if (bnNew > bnTargetLimit)
-        bnNew = bnTargetLimit;
-
-    return bnNew.GetCompact();
-}
-
-static unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, bool fProofOfStake)
+static unsigned int GetNextTargetRequired_(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
     CBigNum bnTargetLimit = fProofOfStake ? bnProofOfStakeLimit : bnProofOfWorkLimit;
 
@@ -1168,10 +1150,7 @@ static unsigned int GetNextTargetRequiredV2(const CBlockIndex* pindexLast, bool 
 
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
-    if (pindexLast->nHeight < 38424)
-        return GetNextTargetRequiredV1(pindexLast, fProofOfStake);
-    else
-        return GetNextTargetRequiredV2(pindexLast, fProofOfStake);
+    return GetNextTargetRequired_(pindexLast, fProofOfStake);
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
@@ -1673,6 +1652,18 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                    vtx[0].GetValueOut(),
                    nReward));
     }
+	
+	if(IsProofOfWork())
+    {
+        CBitcoinAddress address(!fTestNet ? DSF : DSF_TEST);
+        CScript scriptPubKey;
+        scriptPubKey.SetDestination(address.Get());
+        if (vtx[0].vout[1].scriptPubKey != scriptPubKey)
+            return error("ConnectBlock() : coinbase does not pay to the DSF address)");
+        if (vtx[0].vout[1].nValue < DigitSupport)
+            return error("ConnectBlock() : coinbase does not pay enough to DSF addresss");
+    }
+	
     if (IsProofOfStake())
     {
         // ppcoin: coin stake tx earns reward instead of paying fee
@@ -2139,8 +2130,8 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
     if (IsProofOfStake())
     {
         // Coinbase output should be empty if proof-of-stake block
-        if (vtx[0].vout.size() != 1 || !vtx[0].vout[0].IsEmpty())
-            return DoS(100, error("CheckBlock() : coinbase output not empty for proof-of-stake block"));
+        if ((vtx[0].vout.size() != 2 || !vtx[0].vout[0].IsEmpty() || !vtx[0].vout[1].IsEmpty() ))
+            return error("CheckBlock() : coinbase output not empty for proof-of-stake block");
 
         // Second transaction must be coinstake, the rest must not be
         if (vtx.empty() || !vtx[1].IsCoinStake())
@@ -2599,29 +2590,31 @@ bool LoadBlockIndex(bool fAllowNew)
 			
 		/* 
 		MAIN NET:
-		block.nTime = 1399391817 
-		block.nNonce = 1358739 
-		block.GetHash = 00000569881e231a691a39fc5dbbfedc69a168d620dbbc417b62461559576c9f
-		CBlock(hash=00000569881e231a691a39fc5dbbfedc69a168d620dbbc417b62461559576c9f, ver=1, hashPrevBlock=0000000000000000000000000000000000000000000000000000000000000000, hashMerkleRoot=13777b67e3f4b61f604f4c4612bba6d748040673aa939566ec7f034b4e8602f1, nTime=1399391817, nBits=1e0fffff, nNonce=1358739, vtx=1, vchBlockSig=)
-		Coinbase(hash=13777b67e3, nTime=1399391817, ver=1, vin.size=1, vout.size=1, nLockTime=0)
-		CTxIn(COutPoint(0000000000, 4294967295), coinbase 00012a32736369656e63656461696c792e636f6d2f72656c65617365732f323031342f30352f3134303530363039343933382e68746d)
-		CTxOut(empty)
-		vMerkleTree: 13777b67e3
+		block.nTime = 1401361176 
+block.nNonce = 12172480 
+block.nVersion = 1 
+block.GetHash = 00000539f63956b463dc1ca602940b9187bae1be52b0a10303d1a804a94b3b27
+CBlock(hash=00000539f63956b463dc1ca602940b9187bae1be52b0a10303d1a804a94b3b27, ver=1, hashPrevBlock=0000000000000000000000000000000000000000000000000000000000000000, hashMerkleRoot=c615f6e9770082d74e7ba536f22fb64aea7ef3d7b2b68289a1722ab54173d16d, nTime=1401361176, nBits=1e0fffff, nNonce=12172480, vtx=1, vchBlockSig=)
+  Coinbase(hash=c615f6e977, nTime=1401361176, ver=1, vin.size=1, vout.size=1, nLockTime=0)
+    CTxIn(COutPoint(0000000000, 4294967295), coinbase 00012a3f65646974696f6e2e636e6e2e636f6d2f323031342f30352f32382f746563682f7765622f736b7970652d7472616e736c61746f722f696e6465782e68746d6c)
+    CTxOut(empty)
+  vMerkleTree: c615f6e977
 		
 		TEST NET:
-		block.nTime = 1399391817 
-		block.nNonce = 131423 
-		block.GetHash = 00000519eb3ff154bf9bdd83e00d876edf586f5d5c5f97fcbe720d5177bca9f7
-		CBlock(hash=00000519eb3ff154bf9bdd83e00d876edf586f5d5c5f97fcbe720d5177bca9f7, ver=1, hashPrevBlock=0000000000000000000000000000000000000000000000000000000000000000, hashMerkleRoot=13777b67e3f4b61f604f4c4612bba6d748040673aa939566ec7f034b4e8602f1, nTime=1399391817, nBits=1f00ffff, nNonce=131423, vtx=1, vchBlockSig=)
-		Coinbase(hash=13777b67e3, nTime=1399391817, ver=1, vin.size=1, vout.size=1, nLockTime=0)
-		CTxIn(COutPoint(0000000000, 4294967295), coinbase 00012a32736369656e63656461696c792e636f6d2f72656c65617365732f323031342f30352f3134303530363039343933382e68746d)
-		CTxOut(empty)
-		vMerkleTree: 13777b67e3 	
+		block.nTime = 1401361176 
+block.nNonce = 51089 
+block.nVersion = 1 
+block.GetHash = 0000ff7ec58db5a39e303bcf91d1286e61446bb0fc03986fe5d4ea296f7d43d7
+CBlock(hash=0000ff7ec58db5a39e303bcf91d1286e61446bb0fc03986fe5d4ea296f7d43d7, ver=1, hashPrevBlock=0000000000000000000000000000000000000000000000000000000000000000, hashMerkleRoot=c615f6e9770082d74e7ba536f22fb64aea7ef3d7b2b68289a1722ab54173d16d, nTime=1401361176, nBits=1f00ffff, nNonce=51089, vtx=1, vchBlockSig=)
+  Coinbase(hash=c615f6e977, nTime=1401361176, ver=1, vin.size=1, vout.size=1, nLockTime=0)
+    CTxIn(COutPoint(0000000000, 4294967295), coinbase 00012a3f65646974696f6e2e636e6e2e636f6d2f323031342f30352f32382f746563682f7765622f736b7970652d7472616e736c61746f722f696e6465782e68746d6c)
+    CTxOut(empty)
+  vMerkleTree: c615f6e977
 		*/
      
-        const char* pszTimestamp = "sciencedaily.com/releases/2014/05/140506094938.htm";
+        const char* pszTimestamp = "edition.cnn.com/2014/05/28/tech/web/skype-translator/index.html";
         CTransaction txNew;
-        txNew.nTime = 1399391817;
+        txNew.nTime = 1401361176;
         txNew.vin.resize(1);
         txNew.vout.resize(1);
         txNew.vin[0].scriptSig = CScript() << 0 << CBigNum(42) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
@@ -2631,12 +2624,12 @@ bool LoadBlockIndex(bool fAllowNew)
         block.hashPrevBlock = 0;
         block.hashMerkleRoot = block.BuildMerkleTree();
         block.nVersion = 1;
-        block.nTime    = 1399391817;
+        block.nTime    = 1401361176;
         block.nBits    = bnProofOfWorkLimit.GetCompact();
-        block.nNonce   = !fTestNet ? 1358739 : 131423;
+        block.nNonce   = !fTestNet ? 12172480 : 51089;
 
         //// debug print
-        assert(block.hashMerkleRoot == uint256("0x13777b67e3f4b61f604f4c4612bba6d748040673aa939566ec7f034b4e8602f1"));
+        assert(block.hashMerkleRoot == uint256("0xc615f6e9770082d74e7ba536f22fb64aea7ef3d7b2b68289a1722ab54173d16d"));		
 		block.print();
         assert(block.GetHash() == (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet));
         assert(block.CheckBlock());

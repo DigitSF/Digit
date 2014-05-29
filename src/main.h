@@ -11,6 +11,7 @@
 #include "script.h"
 #include "scrypt.h"
 #include "zerocoin/Zerocoin.h"
+#include "hashblock.h"
 
 #include <list>
 
@@ -26,17 +27,20 @@ class CInv;
 class CRequestTracker;
 class CNode;
 
-static const int LAST_POW_BLOCK = 2160000;
+static const int LAST_POW_BLOCK = 915000;
 
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 static const unsigned int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
 static const unsigned int MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE/100;
 static const unsigned int MAX_INV_SZ = 50000;
-static const int64_t MIN_TX_FEE = 100000;
+static const int64_t MIN_TX_FEE = 1000000;
 static const int64_t MIN_RELAY_TX_FEE = MIN_TX_FEE;
 static const int64_t MAX_MONEY = 90000000000 * COIN;
-static const int64_t MAX_PROOF_OF_STAKE = 0.2 * CENT; // 0.2%
+static const int64_t MAX_PROOF_OF_STAKE = 1 * CENT; // 1%
+
+#define DSF "dKr1ybxsWFmop9RuodZVunqdzqPAHscojd"
+#define DSF_TEST "mjncy4xryjQE2N2NTehqbLdA1XdyBZH4rs"
 
 inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
@@ -48,12 +52,13 @@ static const int fHaveUPnP = true;
 static const int fHaveUPnP = false;
 #endif
 
-static const uint256 hashGenesisBlock("0x00000569881e231a691a39fc5dbbfedc69a168d620dbbc417b62461559576c9f");
-static const uint256 hashGenesisBlockTestNet("0x00000519eb3ff154bf9bdd83e00d876edf586f5d5c5f97fcbe720d5177bca9f7");
+static const uint256 hashGenesisBlock("0x00000539f63956b463dc1ca602940b9187bae1be52b0a10303d1a804a94b3b27");
+static const uint256 hashGenesisBlockTestNet("0x0000ff7ec58db5a39e303bcf91d1286e61446bb0fc03986fe5d4ea296f7d43d7");
 
 inline int64_t PastDrift(int64_t nTime)   { return nTime - 10 * 60; } // up to 10 minutes from the past
 inline int64_t FutureDrift(int64_t nTime) { return nTime + 10 * 60; } // up to 10 minutes from the future
 
+extern int64_t DigitSupport;
 extern libzerocoin::Params* ZCParams;
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
@@ -903,7 +908,7 @@ public:
 
     uint256 GetHash() const
     {
-        return scrypt_blockhash(CVOIDBEGIN(nVersion));
+        return Hash9(BEGIN(nVersion), END(nNonce));
     }
 
     int64_t GetBlockTime() const
