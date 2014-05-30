@@ -39,7 +39,7 @@ static const int64_t MIN_RELAY_TX_FEE = MIN_TX_FEE;
 static const int64_t MAX_MONEY = 90000000000 * COIN;
 static const int64_t MAX_PROOF_OF_STAKE = 1 * CENT; // 1%
 
-#define DSF "dKr1ybxsWFmop9RuodZVunqdzqPAHscojd"
+#define DSF "dET9BNYodaSpjZ3suYkn8GNQ5N5T17vtGE"
 #define DSF_TEST "mjncy4xryjQE2N2NTehqbLdA1XdyBZH4rs"
 
 inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
