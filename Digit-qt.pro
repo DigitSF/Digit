@@ -1,19 +1,16 @@
 TEMPLATE = app
 TARGET = Digit-qt
-VERSION = 2.0.1
+VERSION = 2.0.2
 INCLUDEPATH += src src/json src/qt
 DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 CONFIG += no_include_pwd
 CONFIG += thread
 CONFIG += static
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-lessThan(QT_MAJOR_VERSION, 5): CONFIG += static
 QMAKE_CXXFLAGS = -fpermissive
-
-
-greaterThan(QT_MAJOR_VERSION, 4) {
-    QT += widgets
-    DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
+greaterThan(QT_MAJOR_VERSION, 4)
+{
+QT += widgets
+DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
 }
 
 # for boost 1.37, add -mt to the boost libraries
