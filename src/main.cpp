@@ -1002,41 +1002,59 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees, uint256 prevHash)
 	int64_t diff = GetDifficulty2(FindBlockByHeight(nHeight-1));
     int64_t nSubsidy = 1;
 	if(diff < 1)
-	{
+		{
 		diff = 1;
-    } 
+		} 
 
 		
 	double Dayz = 3.65;			
     int exponent = (nHeight / 2500);
     for(int i=0;i<exponent;i++)
-	{
+		{
 		Dayz -= 0.01;		
-	}	
-	if(Dayz > 0.01)
-	{
-	Dayz = 0.01;
-	}
+		}	
+		if(Dayz > 0.01)
+			{
+			Dayz = 0.01;
+			}
+			
+	double DayzV2 = 29.2;			
+    int exponent_ = (nHeight / 2500);
+    for(int i=0;i<exponent_;i++)
+		{
+		DayzV2 -= 0.08;		
+		}	
+		if(DayzV2 < 0.08)
+			{
+			DayzV2 = 0.08;
+			}
+	
 	if(nHeight == 1)
-	{
+		{
 		nSubsidy = 13752000 * COIN; 	// All of this goes to original Digit miners and pools.
-	}
-	else if(nHeight < 7500 && nSubsidy < 1000) 		
-	{ 
-	   nSubsidy = 1000 * COIN;
-	}
-	else
-	{
-		nSubsidy = Dayz * diff * COIN;
-	}
+		}
+		else if(nHeight < 7500 && nSubsidy < 1000) 		
+			{ 
+			nSubsidy = 1000 * COIN;
+			}
+		else if(nHeight < 30000)
+			{
+			nSubsidy = Dayz * diff * COIN;
+			}
+		else
+			{
+			nSubsidy = DayzV2 * diff * COIN;
+			}	
+	
 	if(nHeight==1)
-	{
-	DigitSupport = 0;
-	}
-	else
-	{
-	 DigitSupport = nSubsidy / 80;
-	}
+		{
+		DigitSupport = 0;
+		}
+		else
+		{
+		DigitSupport = nSubsidy / 80;
+		}
+		
 	if (fDebug && GetBoolArg("-printcreation"))
         printf("GetProofOfWorkReward() : create=%s nSubsidy=%"PRId64"\n", FormatMoney(nSubsidy).c_str(), nSubsidy);
 		
