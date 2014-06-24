@@ -417,43 +417,36 @@ CTransaction::GetLegacySigOpCount() const
 int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
 {
 AssertLockHeld(cs_main);
-    if (fClient)
+    CBlock blockTmp;
+    if (pblock == NULL)
     {
-        if (hashBlock == 0)
+      // Load the block this tx is in
+        CTxIndex txindex;
+        if (!CTxDB("r").ReadTxIndex(GetHash(), txindex))
             return 0;
+        if (!blockTmp.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos))
+            return 0;
+			pblock = &blockTmp;
     }
-    else
+    
+
+    // Update the tx's hashBlock
+    hashBlock = pblock->GetHash();
+
+    // Locate the transaction
+    for (nIndex = 0; nIndex < (int)pblock->vtx.size(); nIndex++)
+        if (pblock->vtx[nIndex] == *(CTransaction*)this)
+            break;
+    if (nIndex == (int)pblock->vtx.size())
     {
-        CBlock blockTmp;
-        if (pblock == NULL)
-        {
-            // Load the block this tx is in
-            CTxIndex txindex;
-            if (!CTxDB("r").ReadTxIndex(GetHash(), txindex))
-                return 0;
-            if (!blockTmp.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos))
-                return 0;
-            pblock = &blockTmp;
-        }
-
-        // Update the tx's hashBlock
-        hashBlock = pblock->GetHash();
-
-        // Locate the transaction
-        for (nIndex = 0; nIndex < (int)pblock->vtx.size(); nIndex++)
-            if (pblock->vtx[nIndex] == *(CTransaction*)this)
-                break;
-        if (nIndex == (int)pblock->vtx.size())
-        {
-            vMerkleBranch.clear();
-            nIndex = -1;
-            printf("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
-            return 0;
-        }
-
-        // Fill in merkle branch
-        vMerkleBranch = pblock->GetMerkleBranch(nIndex);
+        vMerkleBranch.clear();
+        nIndex = -1;
+        printf("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
+        return 0;
     }
+	
+	// Fill in merkle branch
+    vMerkleBranch = pblock->GetMerkleBranch(nIndex);
 
     // Is the tx in a block that's in the main chain
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
@@ -830,16 +823,7 @@ int CMerkleTx::GetBlocksToMaturity() const
 
 bool CMerkleTx::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs)
 {
-    if (fClient)
-    {
-        if (!IsInMainChain() && !ClientConnectInputs())
-            return false;
-        return CTransaction::AcceptToMemoryPool(txdb, fCheckInputs);
-    }
-    else
-    {
-        return CTransaction::AcceptToMemoryPool(txdb, fCheckInputs);
-    }
+    return CTransaction::AcceptToMemoryPool(txdb, fCheckInputs);
 }
 
 bool CMerkleTx::AcceptToMemoryPool()
@@ -854,7 +838,6 @@ bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)
 {
 
     {
-        LOCK(mempool.cs);
         // Add previous supporting transactions first
         BOOST_FOREACH(CMerkleTx& tx, vtxPrev)
         {
@@ -898,10 +881,8 @@ bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
     {
         LOCK(cs_main);
         {
-            LOCK(mempool.cs);
-            if (mempool.exists(hash))
+            if (mempool.lookup(hash, tx))
             {
-                tx = mempool.lookup(hash);
                 return true;
             }
         }
@@ -1337,12 +1318,8 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
         if (!fFound || txindex.pos == CDiskTxPos(1,1,1))
         {
             // Get prev tx from single transactions in memory
-            {
-                LOCK(mempool.cs);
-                if (!mempool.exists(prevout.hash))
-                    return error("FetchInputs() : %s mempool Tx prev not found %s", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
-                txPrev = mempool.lookup(prevout.hash);
-            }
+            if (!mempool.lookup(prevout.hash, txPrev))
+                return error("FetchInputs() : %s mempool Tx prev not found %s", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
             if (!fFound)
                 txindex.vSpent.resize(txPrev.vout.size());
         }
@@ -1512,56 +1489,6 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs, map<uint256, CTx
 
     return true;
 }
-
-
-bool CTransaction::ClientConnectInputs()
-{
-    if (IsCoinBase())
-        return false;
-
-    // Take over previous transactions' spent pointers
-    {
-        LOCK(mempool.cs);
-        int64_t nValueIn = 0;
-        for (unsigned int i = 0; i < vin.size(); i++)
-        {
-            // Get prev tx from single transactions in memory
-            COutPoint prevout = vin[i].prevout;
-            if (!mempool.exists(prevout.hash))
-                return false;
-            CTransaction& txPrev = mempool.lookup(prevout.hash);
-
-            if (prevout.n >= txPrev.vout.size())
-                return false;
-
-            // Verify signature
-            if (!VerifySignature(txPrev, *this, i, 0))
-                return error("ConnectInputs() : VerifySignature failed");
-
-            ///// this is redundant with the mempool.mapNextTx stuff,
-            ///// not sure which I want to get rid of
-            ///// this has to go away now that posNext is gone
-            // // Check for conflicts
-            // if (!txPrev.vout[prevout.n].posNext.IsNull())
-            //     return error("ConnectInputs() : prev tx already used");
-            //
-            // // Flag outpoints as used
-            // txPrev.vout[prevout.n].posNext = posThisTx;
-
-            nValueIn += txPrev.vout[prevout.n].nValue;
-
-            if (!MoneyRange(txPrev.vout[prevout.n].nValue) || !MoneyRange(nValueIn))
-                return error("ClientConnectInputs() : txin values out of range");
-        }
-        if (GetValueOut() > nValueIn)
-            return false;
-    }
-
-    return true;
-}
-
-
-
 
 bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
@@ -2919,10 +2846,7 @@ bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
     case MSG_TX:
         {
         bool txInMap = false;
-            {
-            LOCK(mempool.cs);
-            txInMap = (mempool.exists(inv.hash));
-            }
+            txInMap = mempool.exists(inv.hash);
         return txInMap ||
                mapOrphanTransactions.count(inv.hash) ||
                txdb.ContainsTx(inv.hash);
@@ -3267,9 +3191,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
                     }
                 }
                 if (!pushed && inv.type == MSG_TX) {
-                    LOCK(mempool.cs);
-                    if (mempool.exists(inv.hash)) {
-                        CTransaction tx = mempool.lookup(inv.hash);
+                    CTransaction tx;
+                    if (mempool.lookup(inv.hash, tx)) {
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << tx;
