@@ -3007,7 +3007,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
         // Change version
         pfrom->PushMessage("verack");
-        pfrom->vSend.SetVersion(min(pfrom->nVersion, PROTOCOL_VERSION));
+        pfrom->ssSend.SetVersion(min(pfrom->nVersion, PROTOCOL_VERSION));
 
         if (!pfrom->fInbound)
         {
@@ -3593,8 +3593,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 // requires LOCK(cs_vRecvMsg)
 bool ProcessMessages(CNode* pfrom)
 {
-    if (pfrom->vRecvMsg.empty())
-        return true;
+
     //if (fDebug)
     //    printf("ProcessMessages(%zu messages)\n", pfrom->vRecvMsg.size());
 
@@ -3606,29 +3605,36 @@ bool ProcessMessages(CNode* pfrom)
     //  (4) checksum
     //  (x) data
     //
+	
+	bool fOk = true;
 
-    unsigned int nMsgPos = 0;
-    for (; nMsgPos < pfrom->vRecvMsg.size(); nMsgPos++)
-    {
+   std::deque<CNetMessage>::iterator it = pfrom->vRecvMsg.begin();
+    while (!pfrom->fDisconnect && it != pfrom->vRecvMsg.end())
+	{
         // Don't bother if send buffer is too full to respond anyway
-        if (pfrom->vSend.size() >= SendBufferSize())
+        if (pfrom->nSendSize >= SendBufferSize())
             break;
 
-        // get next message; end, if an incomplete message is found
-        CNetMessage& msg = pfrom->vRecvMsg[nMsgPos];
+        // get next message
+        CNetMessage& msg = *it;
 
         //if (fDebug)
         //    printf("ProcessMessages(message %u msgsz, %zu bytes, complete:%s)\n",
         //            msg.hdr.nMessageSize, msg.vRecv.size(),
         //            msg.complete() ? "Y" : "N");
-
+		
+		// end, if an incomplete message is found
         if (!msg.complete())
             break;
+			
+			// at this point, any failure means we can delete the current message
+        it++;
 
         // Scan for message start
         if (memcmp(msg.hdr.pchMessageStart, pchMessageStart, sizeof(pchMessageStart)) != 0) {
             printf("\n\nPROCESSMESSAGE: INVALID MESSAGESTART\n\n");
-            return false;
+			fOk = false;
+            break;
         }
         
         // Read header
@@ -3664,7 +3670,7 @@ bool ProcessMessages(CNode* pfrom)
                 fRet = ProcessMessage(pfrom, strCommand, vRecv);
             }
             if (fShutdown)
-                return true;
+                break;
         }
         catch (std::ios_base::failure& e)
         {
@@ -3693,11 +3699,11 @@ bool ProcessMessages(CNode* pfrom)
             printf("ProcessMessage(%s, %u bytes) FAILED\n", strCommand.c_str(), nMessageSize);
     }
 
-    // remove processed messages; one incomplete message may remain
-    if (nMsgPos > 0)
-        pfrom->vRecvMsg.erase(pfrom->vRecvMsg.begin(),
-                              pfrom->vRecvMsg.begin() + nMsgPos);
-    return true;
+    // In case the connection got shut down, its receive buffer was wiped
+    if (!pfrom->fDisconnect)
+        pfrom->vRecvMsg.erase(pfrom->vRecvMsg.begin(), it);
+
+   return fOk;
 }
 
 
@@ -3711,7 +3717,8 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
 
         // Keep-alive ping. We send a nonce of zero because we don't use it anywhere
         // right now.
-        if (pto->nLastSend && GetTime() - pto->nLastSend > 30 * 60 && pto->vSend.empty()) {
+        if (pto->nLastSend && GetTime() - pto->nLastSend > 30 * 60 && pto->vSendMsg.empty()) 
+		{
             uint64_t nonce = 0;
             if (pto->nVersion > BIP0031_VERSION)
                 pto->PushMessage("ping", nonce);
