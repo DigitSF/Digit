@@ -152,14 +152,6 @@ template<typename Stream> inline void Serialize(Stream& s, bool a, int, int=0)  
 template<typename Stream> inline void Unserialize(Stream& s, bool& a, int, int=0) { char f; READDATA(s, f); a=f; }
 
 
-#ifndef THROW_WITH_STACKTRACE
-#define THROW_WITH_STACKTRACE(exception)  \
-{                                         \
-    LogStackTrace();                      \
-    throw (exception);                    \
-}
-void LogStackTrace();
-#endif
 
 //
 // Compact size
@@ -237,7 +229,7 @@ uint64_t ReadCompactSize(Stream& is)
         nSizeRet = xSize;
     }
     if (nSizeRet > (uint64_t)MAX_SIZE)
-        THROW_WITH_STACKTRACE(std::ios_base::failure("ReadCompactSize() : size too large"));
+        throw std::ios_base::failure("ReadCompactSize() : size too large");
     return nSizeRet;
 }
 
