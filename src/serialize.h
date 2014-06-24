@@ -897,7 +897,7 @@ public:
     {
         state |= bits;
         if (state & exceptmask)
-            THROW_WITH_STACKTRACE(std::ios_base::failure(psz));
+            throw std::ios_base::failure(psz);
     }
 
     bool eof() const             { return size() == 0; }
@@ -1064,7 +1064,7 @@ public:
     {
         state |= bits;
         if (state & exceptmask)
-            THROW_WITH_STACKTRACE(std::ios_base::failure(psz));
+            throw std::ios_base::failure(psz);
     }
 
     bool fail() const            { return state & (std::ios::badbit | std::ios::failbit); }
