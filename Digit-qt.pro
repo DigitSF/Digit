@@ -246,7 +246,7 @@ HEADERS += src/qt/bitcoingui.h \
     src/qt/rpcconsole.h \
     src/version.h \
     src/netbase.h \
-    src/clientversion.h \
+	src/clientversion.h \
     src/bloom.h \
     src/checkqueue.h \
     src/hash.h \
