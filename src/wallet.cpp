@@ -194,7 +194,7 @@ void CWallet::SetBestChain(const CBlockLocator& loc)
 
 bool CWallet::SetMinVersion(enum WalletFeature nVersion, CWalletDB* pwalletdbIn, bool fExplicit)
 {
-	AssertLockHeld(cs_wallet); // nWalletVersion
+	LOCK(cs_wallet); // nWalletVersion
     if (nWalletVersion >= nVersion)
         return true;
 
@@ -221,7 +221,7 @@ bool CWallet::SetMinVersion(enum WalletFeature nVersion, CWalletDB* pwalletdbIn,
 
 bool CWallet::SetMaxVersion(int nVersion)
 {
-	AssertLockHeld(cs_wallet); // nWalletVersion, nWalletMaxVersion
+	LOCK(cs_wallet); // nWalletVersion, nWalletMaxVersion
     // cannot downgrade below current version
     if (nWalletVersion > nVersion)
         return false;
@@ -855,15 +855,6 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
         }
     }
     return ret;
-}
-
-int CWallet::ScanForWalletTransaction(const uint256& hashTx)
-{
-    CTransaction tx;
-    tx.ReadFromDisk(COutPoint(hashTx, 0));
-    if (AddToWalletIfInvolvingMe(tx, NULL, true, true))
-        return 1;
-    return 0;
 }
 
 void CWallet::ReacceptWalletTransactions()
@@ -1866,7 +1857,6 @@ string CWallet::SendMoneyToDestination(const CTxDestination& address, int64_t nV
 
 DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
 {
-	AssertLockHeld(cs_wallet); // setKeyPool
     if (!fFileBacked)
         return DB_LOAD_OK;
     fFirstRunRet = false;
@@ -1875,6 +1865,7 @@ DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
     {
         if (CDB::Rewrite(strWalletFile, "\x04pool"))
         {
+			LOCK(cs_wallet);
             setKeyPool.clear();
             // Note: can't top-up keypool here, because wallet is locked.
             // User will be prompted to unlock wallet the next operation
@@ -1893,10 +1884,15 @@ DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
 
 bool CWallet::SetAddressBookName(const CTxDestination& address, const string& strName)
 {
-	AssertLockHeld(cs_wallet); // mapAddressBook
-    std::map<CTxDestination, std::string>::iterator mi = mapAddressBook.find(address);
-    mapAddressBook[address] = strName;
-    NotifyAddressBookChanged(this, address, strName, ::IsMine(*this, address), (mi == mapAddressBook.end()) ? CT_NEW : CT_UPDATED);
+    bool fUpdated = false;
+    {
+        LOCK(cs_wallet); // mapAddressBook
+        std::map<CTxDestination, std::string>::iterator mi = mapAddressBook.find(address);
+        fUpdated = mi != mapAddressBook.end();
+        mapAddressBook[address] = strName;
+    }
+    NotifyAddressBookChanged(this, address, strName, ::IsMine(*this, address),
+                             (fUpdated ? CT_UPDATED : CT_NEW) );
     if (!fFileBacked)
         return false;
     return CWalletDB(strWalletFile).WriteName(CBitcoinAddress(address).ToString(), strName);
@@ -1904,9 +1900,14 @@ bool CWallet::SetAddressBookName(const CTxDestination& address, const string& st
 
 bool CWallet::DelAddressBookName(const CTxDestination& address)
 {
-	AssertLockHeld(cs_wallet); // mapAddressBook
-    mapAddressBook.erase(address);
+    {
+        LOCK(cs_wallet); // mapAddressBook
+
+        mapAddressBook.erase(address);
+    }
+
     NotifyAddressBookChanged(this, address, "", ::IsMine(*this, address), CT_DELETED);
+	
     if (!fFileBacked)
         return false;
     return CWalletDB(strWalletFile).EraseName(CBitcoinAddress(address).ToString());
