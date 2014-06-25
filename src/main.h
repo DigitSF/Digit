@@ -1584,6 +1584,7 @@ public:
 
     bool exists(uint256 hash) const
     {
+		LOCK(cs);
         return (mapTx.count(hash) != 0);
     }
 
