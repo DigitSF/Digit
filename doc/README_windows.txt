@@ -1,7 +1,8 @@
-BlackCoin 0.4.4 BETA
+Digit 2.1.2 BETA
 
-Copyright (c) 2013 NovaCoin Developers
-Copyright (c) 2011-2013 PPCoin Developers
+Copyright © 2009-2014 Bitcoin Developers
+Copyright © 2014 Blackcoin Developers
+Copyright © 2014 Digit Developers
 Distributed under the MIT/X11 software license, see the accompanying
 file license.txt or http://www.opensource.org/licenses/mit-license.php.
 This product includes software developed by the OpenSSL Project for use in
@@ -11,8 +12,17 @@ cryptographic software written by Eric Young (eay@cryptsoft.com).
 
 Intro
 -----
-BlackCoin is a free open source project derived from Bitcoin, with
-the goal of providing a long-term energy-efficient scrypt-based crypto-currency.
-Built on the foundation of Bitcoin, PPCoin and NovaCoin, innovations such as proof-of-stake and scrypt
-help further advance the field of crypto-currency.
+Digit (DIG) is a hybrid PoW-PoS-based cryptocurrency with a unique difficulty and time multiplier dependent mining reward.
+
+	Specifications:
+
+	- X13 mining algorithm
+	- 60 seconds block target
+	- Difficulty dependent PoW reward
+	- Mining reward decreasing multiplier
+	- Difficulty retargets every block
+	- Variable PoS interest from 1% monthly
+	- 6 conformations for transactions
+	- 60 confirmations for mined/staked blocks
+	- Ports: 11100 (connection) and 11101 (RPC)	
 

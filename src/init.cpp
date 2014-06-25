@@ -495,7 +495,7 @@ bool AppInit2()
 
     // Sanity check
     if (!InitSanityCheck())
-        return InitError(_("Initialization sanity check failed. BlackCoin is shutting down."));
+        return InitError(_("Initialization sanity check failed. Digit is shutting down."));
 
 	std::string strDataDir = GetDataDir().string();
     std::string strWalletFileName = GetArg("-wallet", "wallet.dat");

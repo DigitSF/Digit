@@ -7,7 +7,7 @@ cryptographic software written by Eric Young (eay@cryptsoft.com) and UPnP
 software written by Thomas Bernard.
 
 
-See readme-qt.rst for instructions on building BlackCoin QT, the
+See readme-qt.rst for instructions on building Digit QT, the
 graphical user interface.
 
 WINDOWS BUILD NOTES
@@ -19,7 +19,7 @@ TODO: What works?
 Note: releases are cross-compiled using mingw running on Linux.
 
 
-Dependencies
+Dependencies (outdated)
 ------------
 Libraries you need to download separately and build:
 
@@ -36,10 +36,10 @@ Boost          MIT-like license
 miniupnpc      New (3-clause) BSD license
 
 Versions used in this release:
-OpenSSL      1.0.1b
+OpenSSL      1.0.1g
 Berkeley DB  4.8.30.NC
-Boost        1.47.0
-miniupnpc    1.6
+Boost        1.55.0
+miniupnpc    1.9
 
 
 OpenSSL
@@ -76,9 +76,9 @@ make -f Makefile.mingw
 mkdir miniupnpc
 cp *.h miniupnpc/
 
-BlackCoin
+Digit
 -------
 DOS prompt:
-cd \blackcoin\src
+cd \Digit\src
 mingw32-make -f makefile.mingw
-strip blackcoind.exe
+strip Digitd.exe
