@@ -55,11 +55,6 @@ namespace boost {
 # include <sys/prctl.h>
 #endif
 
-#ifndef WIN32
-#include <execinfo.h>
-#endif
-
-
 using namespace std;
 
 map<string, string> mapArgs;
@@ -197,9 +192,6 @@ uint256 GetRandHash()
 
 
 
-
-static FILE* fileout = NULL;
-
 inline int OutputDebugStringF(const char* pszFormat, ...)
 {
     int ret = 0;
@@ -214,6 +206,7 @@ inline int OutputDebugStringF(const char* pszFormat, ...)
     else if (!fPrintToDebugger)
     {
         // print to debug.log
+	static FILE* fileout = NULL;
 
         if (!fileout)
         {
@@ -970,12 +963,6 @@ static std::string FormatException(std::exception* pex, const char* pszThread)
             "UNKNOWN EXCEPTION       \n%s in %s       \n", pszModule, pszThread);
 }
 
-void LogException(std::exception* pex, const char* pszThread)
-{
-    std::string message = FormatException(pex, pszThread);
-    printf("\n%s", message.c_str());
-}
-
 void PrintException(std::exception* pex, const char* pszThread)
 {
     std::string message = FormatException(pex, pszThread);
@@ -983,19 +970,6 @@ void PrintException(std::exception* pex, const char* pszThread)
     fprintf(stderr, "\n\n************************\n%s\n", message.c_str());
     strMiscWarning = message;
     throw;
-}
-
-void LogStackTrace() {
-    printf("\n\n******* exception encountered *******\n");
-    if (fileout)
-    {
-#ifndef WIN32
-        void* pszBuffer[32];
-        size_t size;
-        size = backtrace(pszBuffer, 32);
-        backtrace_symbols_fd(pszBuffer, size, fileno(fileout));
-#endif
-    }
 }
 
 void PrintExceptionContinue(std::exception* pex, const char* pszThread)
@@ -1249,12 +1223,26 @@ void AddTimeData(const CNetAddr& ip, int64_t nTime)
     }
 }
 
-
-
-
-
-
-
+uint32_t insecure_rand_Rz = 11;
+uint32_t insecure_rand_Rw = 11;
+void seed_insecure_rand(bool fDeterministic)
+{
+    //The seed values have some unlikely fixed points which we avoid.
+    if(fDeterministic)
+    {
+        insecure_rand_Rz = insecure_rand_Rw = 11;
+    } else {
+        uint32_t tmp;
+        do{
+            RAND_bytes((unsigned char*)&tmp,4);
+        }while(tmp==0 || tmp==0x9068ffffU);
+        insecure_rand_Rz=tmp;
+        do{
+            RAND_bytes((unsigned char*)&tmp,4);
+        }while(tmp==0 || tmp==0x464fffffU);
+        insecure_rand_Rw=tmp;
+    }
+}
 
 string FormatVersion(int nVersion)
 {

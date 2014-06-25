@@ -29,16 +29,12 @@ public:
         ReserveBalance,    // qint64
         DisplayUnit,       // BitcoinUnits::Unit
         DisplayAddresses,  // bool
-        DetachDatabases,   // bool
         Language,          // QString
         CoinControlFeatures, // bool
         OptionIDRowCount,
     };
 
     void Init();
-
-    /* Migrate settings from wallet.dat after app initialization */
-    bool Upgrade(); /* returns true if settings upgraded */
 
     int rowCount(const QModelIndex & parent = QModelIndex()) const;
     QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const;

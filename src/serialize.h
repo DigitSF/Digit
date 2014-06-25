@@ -152,14 +152,6 @@ template<typename Stream> inline void Serialize(Stream& s, bool a, int, int=0)  
 template<typename Stream> inline void Unserialize(Stream& s, bool& a, int, int=0) { char f; READDATA(s, f); a=f; }
 
 
-#ifndef THROW_WITH_STACKTRACE
-#define THROW_WITH_STACKTRACE(exception)  \
-{                                         \
-    LogStackTrace();                      \
-    throw (exception);                    \
-}
-void LogStackTrace();
-#endif
 
 //
 // Compact size
@@ -223,21 +215,27 @@ uint64_t ReadCompactSize(Stream& is)
         unsigned short xSize;
         READDATA(is, xSize);
         nSizeRet = xSize;
+		if (nSizeRet < 253)
+            throw std::ios_base::failure("non-canonical ReadCompactSize()");
     }
     else if (chSize == 254)
     {
         unsigned int xSize;
         READDATA(is, xSize);
         nSizeRet = xSize;
+		if (nSizeRet < 0x10000u)
+            throw std::ios_base::failure("non-canonical ReadCompactSize()");
     }
     else
     {
         uint64_t xSize;
         READDATA(is, xSize);
         nSizeRet = xSize;
+		if (nSizeRet < 0x100000000LLu)
+            throw std::ios_base::failure("non-canonical ReadCompactSize()");
     }
     if (nSizeRet > (uint64_t)MAX_SIZE)
-        THROW_WITH_STACKTRACE(std::ios_base::failure("ReadCompactSize() : size too large"));
+        throw std::ios_base::failure("ReadCompactSize() : size too large");
     return nSizeRet;
 }
 
@@ -703,7 +701,7 @@ struct ser_streamplaceholder
 
 
 
-
+typedef std::vector<char, zero_after_free_allocator<char> > CSerializeData;
 
 /** Double ended buffer combining vector and stream-like interfaces.
  *
@@ -713,7 +711,7 @@ struct ser_streamplaceholder
 class CDataStream
 {
 protected:
-    typedef std::vector<char, zero_after_free_allocator<char> > vector_type;
+    typedef CSerializeData vector_type;
     vector_type vch;
     unsigned int nReadPos;
     short state;
@@ -809,19 +807,6 @@ public:
     iterator insert(iterator it, const char& x=char()) { return vch.insert(it, x); }
     void insert(iterator it, size_type n, const char& x) { vch.insert(it, n, x); }
 
-    void insert(iterator it, const_iterator first, const_iterator last)
-    {
-        assert(last - first >= 0);
-        if (it == vch.begin() + nReadPos && (unsigned int)(last - first) <= nReadPos)
-        {
-            // special case for inserting at the front when there's room
-            nReadPos -= (last - first);
-            memcpy(&vch[nReadPos], &first[0], last - first);
-        }
-        else
-            vch.insert(it, first, last);
-    }
-
     void insert(iterator it, std::vector<char>::const_iterator first, std::vector<char>::const_iterator last)
     {
         assert(last - first >= 0);
@@ -910,7 +895,7 @@ public:
     {
         state |= bits;
         if (state & exceptmask)
-            THROW_WITH_STACKTRACE(std::ios_base::failure(psz));
+            throw std::ios_base::failure(psz);
     }
 
     bool eof() const             { return size() == 0; }
@@ -1007,6 +992,12 @@ public:
         ::Unserialize(*this, obj, nType, nVersion);
         return (*this);
     }
+
+    void GetAndClear(CSerializeData &data) 
+	{
+        data.insert(data.end(), begin(), end());
+        clear();
+    }
 };
 
 
@@ -1071,7 +1062,7 @@ public:
     {
         state |= bits;
         if (state & exceptmask)
-            THROW_WITH_STACKTRACE(std::ios_base::failure(psz));
+            throw std::ios_base::failure(psz);
     }
 
     bool fail() const            { return state & (std::ios::badbit | std::ios::failbit); }

@@ -21,6 +21,8 @@ typedef std::vector<unsigned char> valtype;
 
 class CTransaction;
 
+static const unsigned int MAX_SCRIPT_ELEMENT_SIZE = 520; // bytes
+
 /** Signature hash types/flags */
 enum
 {
@@ -39,6 +41,7 @@ enum txnouttype
     TX_PUBKEYHASH,
     TX_SCRIPTHASH,
     TX_MULTISIG,
+	TX_NULL_DATA,
 };
 
 class CNoDestination {
@@ -546,12 +549,6 @@ public:
     void SetDestination(const CTxDestination& address);
     void SetMultisig(int nRequired, const std::vector<CKey>& keys);
 
-
-    void PrintHex() const
-    {
-        printf("CScript(%s)\n", HexStr(begin(), end(), true).c_str());
-    }
-
     std::string ToString(bool fShort=false) const
     {
         std::string str;
@@ -575,11 +572,6 @@ public:
         return str;
     }
 
-    void print() const
-    {
-        printf("%s\n", ToString().c_str());
-    }
-
     CScriptID GetID() const
     {
         return CScriptID(Hash160(*this));
@@ -593,7 +585,7 @@ public:
 bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, const CTransaction& txTo, unsigned int nIn, int nHashType);
 bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::vector<unsigned char> >& vSolutionsRet);
 int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned char> >& vSolutions);
-bool IsStandard(const CScript& scriptPubKey);
+bool IsStandard(const CScript& scriptPubKey, txnouttype& whichType);
 bool IsMine(const CKeyStore& keystore, const CScript& scriptPubKey);
 bool IsMine(const CKeyStore& keystore, const CTxDestination &dest);
 void ExtractAffectedKeys(const CKeyStore &keystore, const CScript& scriptPubKey, std::vector<CKeyID> &vKeys);

@@ -28,7 +28,6 @@ using namespace boost;
 
 CWallet* pwalletMain;
 CClientUIInterface uiInterface;
-std::string strWalletFileName;
 bool fConfChange;
 bool fEnforceCanonical;
 unsigned int nNodeLifespan;
@@ -267,7 +266,6 @@ std::string HelpMessage()
         "  -upnp                  " + _("Use UPnP to map the listening port (default: 0)") + "\n" +
 #endif
 #endif
-        "  -detachdb              " + _("Detach block and address databases. Increases shutdown time (default: 0)") + "\n" +
         "  -paytxfee=<amt>        " + _("Fee per KB to add to transactions you send") + "\n" +
         "  -mininput=<amt>        " + _("When creating transactions, ignore inputs with value less than this (default: 0.01)") + "\n" +
 #ifdef QT_GUI
@@ -316,6 +314,24 @@ std::string HelpMessage()
 
     return strUsage;
 }
+
+/** Sanity checks
+ *  Ensure that Bitcoin is running in a usable environment with all
+ *  necessary library support.
+ */
+bool InitSanityCheck(void)
+{
+    if(!ECC_InitSanityCheck()) {
+        InitError("OpenSSL appears to lack support for elliptic curve cryptography. For more "
+                  "information, visit https://en.bitcoin.it/wiki/OpenSSL_and_EC_Libraries");
+        return false;
+    }
+
+    // TODO: remaining sanity checks.
+
+    return true;
+}
+
 
 /** Initialize bitcoin.
  *  @pre Parameters should be parsed and config file should be read.
@@ -432,8 +448,6 @@ bool AppInit2()
     else
         fDebugNet = GetBoolArg("-debugnet");
 
-    bitdb.SetDetach(GetBoolArg("-detachdb", false));
-
 #if !defined(WIN32) && !defined(QT_GUI)
     fDaemon = GetBoolArg("-daemon");
 #else
@@ -479,7 +493,11 @@ bool AppInit2()
 
     // ********************************************************* Step 4: application initialization: dir lock, daemonize, pidfile, debug log
 
-    std::string strDataDir = GetDataDir().string();
+    // Sanity check
+    if (!InitSanityCheck())
+        return InitError(_("Initialization sanity check failed. Digit is shutting down."));
+
+	std::string strDataDir = GetDataDir().string();
     std::string strWalletFileName = GetArg("-wallet", "wallet.dat");
 
     // strWalletFileName must be a plain filename without a directory
@@ -587,12 +605,6 @@ bool AppInit2()
                 SetLimited(net);
         }
     }
-#if defined(USE_IPV6)
-#if ! USE_IPV6
-    else
-        SetLimited(NET_IPV6);
-#endif
-#endif
 
     CService addrProxy;
     bool fProxy = false;
@@ -604,10 +616,10 @@ bool AppInit2()
         if (!IsLimited(NET_IPV4))
             SetProxy(NET_IPV4, addrProxy, nSocksVersion);
         if (nSocksVersion > 4) {
-#ifdef USE_IPV6
+
             if (!IsLimited(NET_IPV6))
                 SetProxy(NET_IPV6, addrProxy, nSocksVersion);
-#endif
+
             SetNameProxy(addrProxy, nSocksVersion);
         }
         fProxy = true;
@@ -648,10 +660,10 @@ bool AppInit2()
         } else {
             struct in_addr inaddr_any;
             inaddr_any.s_addr = INADDR_ANY;
-#ifdef USE_IPV6
+
             if (!IsLimited(NET_IPV6))
                 fBound |= Bind(CService(in6addr_any, GetListenPort()), false);
-#endif
+
             if (!IsLimited(NET_IPV4))
                 fBound |= Bind(CService(inaddr_any, GetListenPort()), !fBound);
         }
