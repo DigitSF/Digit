@@ -11,6 +11,8 @@
 #include "main.h"
 #include "uint256.h"
 
+static const int nCheckpointSpan = 10;
+
 namespace Checkpoints
 {
     typedef std::map<int, uint256> MapCheckpoints;
@@ -28,9 +30,12 @@ namespace Checkpoints
 		( 1500,   uint256("0x0000000001875b0e449d2390ef4431cf428bf4e969f07004623a055cadd62566") )
 		( 6061,   uint256("0x0000000000ab34466d6d97eb09a52af72544fcdec2ee52a10849406867f1f1fb") )
 		( 21152,   uint256("0x0000000194bc6d4905bcf6f577e2ab72a8aeaa91857226774f6f2045f0bc0a48") )
-		( 34622,   uint256("0x000000002fc46f6b8c8b74862267fb3c88afc7514785d9775b1ea30d1be08064") )
 		( 37499,   uint256("0x000000002f404e6194ff9ca3aac09ab074c2730ad119595dc78dade9645ebbb7") )
+<<<<<<< HEAD
 		( 88620,   uint256("0x000000004c43d4101b12607f5bcb752b2e33eaec81b7ac555722294dee9b8098") )
+=======
+		( 61332,   uint256("0x00000000570aedf27726721c4dc6f83422c14591392e56e42f9e046bde2192a6") )
+>>>>>>> origin/master
     ;
 
     // TestNet has no checkpoints
@@ -196,7 +201,7 @@ namespace Checkpoints
     {
         const CBlockIndex *pindex = pindexBest;
         // Search backward for a block within max span and maturity window
-        while (pindex->pprev && (pindex->GetBlockTime() + CHECKPOINT_MAX_SPAN > pindexBest->GetBlockTime() || pindex->nHeight + 8 > pindexBest->nHeight))
+        while (pindex->pprev && (pindex->GetBlockTime() + nCheckpointSpan * nTargetSpacing > pindexBest->GetBlockTime() || pindex->nHeight + nCheckpointSpan > pindexBest->nHeight))
             pindex = pindex->pprev;
         return pindex->GetBlockHash();
     }

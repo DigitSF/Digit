@@ -13,8 +13,6 @@
 using namespace json_spirit;
 using namespace std;
 
-extern unsigned int nTargetSpacing;
-
 
 Value getmininginfo(const Array& params, bool fHelp)
 {

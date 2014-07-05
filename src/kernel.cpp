@@ -9,8 +9,6 @@
 
 using namespace std;
 
-extern unsigned int nStakeMaxAge;
-extern unsigned int nTargetSpacing;
 
 typedef std::map<int, unsigned int> MapModifierCheckpoints;
 
@@ -21,8 +19,8 @@ static std::map<int, unsigned int> mapStakeModifierCheckpoints =
 		( 1500, 0xb11244d5 ) 
 		( 6061, 0x30381999 )
 		( 21152, 0x16e5c188 )
-		( 34622, 0x424ac1ec )
-		( 37499, 0xb4f7dc02 )		
+		( 37499, 0xb4f7dc02 )
+		( 61332, 0xe917236d )		
     ;
 
 // Hard checkpoints of stake modifiers to ensure they are deterministic (testNet)
@@ -92,9 +90,8 @@ static bool SelectBlockFromCandidates(vector<pair<int64_t, uint256> >& vSortedBy
             continue;
         // compute the selection hash by hashing its proof-hash and the
         // previous proof-of-stake modifier
-        uint256 hashProof = pindex->IsProofOfStake()? pindex->hashProofOfStake : pindex->GetBlockHash();
         CDataStream ss(SER_GETHASH, 0);
-        ss << hashProof << nStakeModifierPrev;
+        ss << pindex->hashProof << nStakeModifierPrev;
         uint256 hashSelection = Hash(ss.begin(), ss.end());
         // the selection hash is divided by 2**32 so that proof-of-stake block
         // is always favored over proof-of-work block. this is to preserve
@@ -380,7 +377,7 @@ unsigned int GetStakeModifierChecksum(const CBlockIndex* pindex)
     CDataStream ss(SER_GETHASH, 0);
     if (pindex->pprev)
         ss << pindex->pprev->nStakeModifierChecksum;
-    ss << pindex->nFlags << pindex->hashProofOfStake << pindex->nStakeModifier;
+    ss << pindex->nFlags << (pindex->IsProofOfStake() ? pindex->hashProof : 0) << pindex->nStakeModifier;
     uint256 hashChecksum = Hash(ss.begin(), ss.end());
     hashChecksum >>= (256 - 32);
     return hashChecksum.Get64();
