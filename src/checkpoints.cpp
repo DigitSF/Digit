@@ -31,14 +31,9 @@ namespace Checkpoints
 		( 6061,   uint256("0x0000000000ab34466d6d97eb09a52af72544fcdec2ee52a10849406867f1f1fb") )
 		( 21152,   uint256("0x0000000194bc6d4905bcf6f577e2ab72a8aeaa91857226774f6f2045f0bc0a48") )
 		( 37499,   uint256("0x000000002f404e6194ff9ca3aac09ab074c2730ad119595dc78dade9645ebbb7") )
-<<<<<<< HEAD
-<<<<<<< HEAD
 		( 88620,   uint256("0x000000004c43d4101b12607f5bcb752b2e33eaec81b7ac555722294dee9b8098") )
-=======
 		( 61332,   uint256("0x00000000570aedf27726721c4dc6f83422c14591392e56e42f9e046bde2192a6") )
->>>>>>> origin/master
-=======
->>>>>>> parent of e05be6d... sync checkpoint, version pump
+		( 88620,   uint256("0x000000004c43d4101b12607f5bcb752b2e33eaec81b7ac555722294dee9b8098") )
     ;
 
     // TestNet has no checkpoints
