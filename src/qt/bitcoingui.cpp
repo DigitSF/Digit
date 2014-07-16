@@ -84,10 +84,10 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
 	nWeight(0)
 {
     resize(634, 416);
-    setWindowTitle(tr("Digit") + " - " + tr("Wallet"));
+    setWindowTitle(tr("DIGIT") + " - " + tr("Wallet"));
 #ifndef Q_OS_MAC
-    qApp->setWindowIcon(QIcon(":icons/bitcoin"));
-    setWindowIcon(QIcon(":icons/bitcoin"));
+    qApp->setWindowIcon(QIcon(":icons/digit"));
+    setWindowIcon(QIcon(":icons/digit"));
 #else
     setUnifiedTitleAndToolBarOnMac(true);
     QApplication::setAttribute(Qt::AA_DontShowIconsInMenus);
@@ -198,7 +198,7 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
 
     // Clicking on "Verify Message" in the address book sends you to the verify message tab
     connect(addressBookPage, SIGNAL(verifyMessage(QString)), this, SLOT(gotoVerifyMessageTab(QString)));
-    // Clicking on "Sign Message" in the Receive Digit page sends you to the sign message tab
+    // Clicking on "Sign Message" in the Receive DIGIT page sends you to the sign message tab
     connect(receiveCoinsPage, SIGNAL(signMessage(QString)), this, SLOT(gotoSignMessageTab(QString)));
 
     gotoOverviewPage();
@@ -223,13 +223,13 @@ void BitcoinGUI::createActions()
     overviewAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_1));
     tabGroup->addAction(overviewAction);
 
-    sendCoinsAction = new QAction(QIcon(":/icons/send"), tr("&Send Digit"), this);
-    sendCoinsAction->setToolTip(tr("Send Digit to a Digit address"));
+    sendCoinsAction = new QAction(QIcon(":/icons/send"), tr("&Send DIGIT"), this);
+    sendCoinsAction->setToolTip(tr("Send DIGIT to a DIGIT address"));
     sendCoinsAction->setCheckable(true);
     sendCoinsAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_2));
     tabGroup->addAction(sendCoinsAction);
 
-    receiveCoinsAction = new QAction(QIcon(":/icons/receiving_addresses"), tr("&Receive Digit"), this);
+    receiveCoinsAction = new QAction(QIcon(":/icons/receiving_addresses"), tr("&Receive DIGIT"), this);
     receiveCoinsAction->setToolTip(tr("Show the list of addresses for receiving payments"));
     receiveCoinsAction->setCheckable(true);
     receiveCoinsAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_3));
@@ -262,18 +262,18 @@ void BitcoinGUI::createActions()
     quitAction->setToolTip(tr("Quit application"));
     quitAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
     quitAction->setMenuRole(QAction::QuitRole);
-    aboutDSFAction = new QAction(tr("Digit FAQ"), this);
-    aboutDSFAction->setToolTip(tr("Digit Support Foundation Homepage"));
-    aboutAction = new QAction(QIcon(":/icons/bitcoin"), tr("&About Digit"), this);
-    aboutAction->setToolTip(tr("Show information about Digit"));
+    aboutDSFAction = new QAction(QIcon(":/icons/digit"), tr("DIGIT FAQ"), this);
+    aboutDSFAction->setToolTip(tr("DIGIT Support Foundation Homepage"));
+    aboutAction = new QAction(QIcon(":/icons/digit"), tr("&About DIGIT"), this);
+    aboutAction->setToolTip(tr("Show information about DIGIT"));
     aboutAction->setMenuRole(QAction::AboutRole);
-    aboutQtAction = new QAction(QIcon(":/trolltech/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
+    aboutQtAction = new QAction(QIcon(":/icons/qtlogo"), tr("About &Qt"), this);
     aboutQtAction->setToolTip(tr("Show information about Qt"));
     aboutQtAction->setMenuRole(QAction::AboutQtRole);
     optionsAction = new QAction(QIcon(":/icons/options"), tr("&Options..."), this);
-    optionsAction->setToolTip(tr("Modify configuration options for Digit"));
+    optionsAction->setToolTip(tr("Modify configuration options for DIGIT"));
     optionsAction->setMenuRole(QAction::PreferencesRole);
-    toggleHideAction = new QAction(QIcon(":/icons/bitcoin"), tr("&Show / Hide"), this);
+    toggleHideAction = new QAction(QIcon(":/icons/digit"), tr("&Show / Hide"), this);
     encryptWalletAction = new QAction(QIcon(":/icons/lock_closed"), tr("&Encrypt Wallet..."), this);
     encryptWalletAction->setToolTip(tr("Encrypt or decrypt wallet"));
     encryptWalletAction->setCheckable(true);
@@ -347,17 +347,27 @@ void BitcoinGUI::createMenuBar()
 
 void BitcoinGUI::createToolBars()
 {
-    QToolBar *toolbar = addToolBar(tr("Tabs toolbar"));
+    QToolBar *toolbar = new QToolBar(tr("Main toolbar"));
+
+    addToolBar(Qt::LeftToolBarArea, toolbar);
+    toolbar->setAllowedAreas(Qt::TopToolBarArea | Qt::LeftToolBarArea | Qt::RightToolBarArea | Qt::BottomToolBarArea);
     toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     toolbar->addAction(overviewAction);
+	toolbar->addSeparator();
     toolbar->addAction(sendCoinsAction);
+	toolbar->addSeparator();
     toolbar->addAction(receiveCoinsAction);
+	toolbar->addSeparator();
     toolbar->addAction(historyAction);
+	toolbar->addSeparator();
     toolbar->addAction(addressBookAction);
-
-    QToolBar *toolbar2 = addToolBar(tr("Actions toolbar"));
-    toolbar2->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    toolbar2->addAction(exportAction);
+	toolbar->addSeparator();
+    toolbar->addAction(exportAction);
+	
+	foreach(QAction *action, toolbar->actions())
+	{
+    toolbar->widgetForAction(action)->setFixedWidth(150);
+	}
 }
 
 void BitcoinGUI::setClientModel(ClientModel *clientModel)
@@ -377,7 +387,7 @@ void BitcoinGUI::setClientModel(ClientModel *clientModel)
 #endif
             if(trayIcon)
             {
-                trayIcon->setToolTip(tr("Digit client") + QString(" ") + tr("[testnet]"));
+                trayIcon->setToolTip(tr("DIGIT client") + QString(" ") + tr("[testnet]"));
                 trayIcon->setIcon(QIcon(":/icons/toolbar_testnet"));
                 toggleHideAction->setIcon(QIcon(":/icons/toolbar_testnet"));
             }
@@ -437,7 +447,7 @@ void BitcoinGUI::createTrayIcon()
     trayIcon = new QSystemTrayIcon(this);
     trayIconMenu = new QMenu(this);
     trayIcon->setContextMenu(trayIconMenu);
-    trayIcon->setToolTip(tr("Digit client"));
+    trayIcon->setToolTip(tr("DIGIT client"));
     trayIcon->setIcon(QIcon(":/icons/toolbar"));
     connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
             this, SLOT(trayIconActivated(QSystemTrayIcon::ActivationReason)));
@@ -512,7 +522,7 @@ void BitcoinGUI::setNumConnections(int count)
     default: icon = ":/icons/connect_4"; break;
     }
     labelConnectionsIcon->setPixmap(QIcon(icon).pixmap(STATUSBAR_ICONSIZE,STATUSBAR_ICONSIZE));
-    labelConnectionsIcon->setToolTip(tr("%n active connection(s) to Digit network", "", count));
+    labelConnectionsIcon->setToolTip(tr("%n active connection(s) to DIGIT network", "", count));
 }
 
 void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
@@ -802,7 +812,7 @@ void BitcoinGUI::dropEvent(QDropEvent *event)
         if (nValidUrisFound)
             gotoSendCoinsPage();
         else
-            notificator->notify(Notificator::Warning, tr("URI handling"), tr("URI can not be parsed! This can be caused by an invalid Digit address or malformed URI parameters."));
+            notificator->notify(Notificator::Warning, tr("URI handling"), tr("URI can not be parsed! This can be caused by an invalid DIGIT address or malformed URI parameters."));
     }
 
     event->acceptProposedAction();
@@ -817,7 +827,7 @@ void BitcoinGUI::handleURI(QString strURI)
         gotoSendCoinsPage();
     }
     else
-        notificator->notify(Notificator::Warning, tr("URI handling"), tr("URI can not be parsed! This can be caused by an invalid Digit address or malformed URI parameters."));
+        notificator->notify(Notificator::Warning, tr("URI handling"), tr("URI can not be parsed! This can be caused by an invalid DIGIT address or malformed URI parameters."));
 }
 
 void BitcoinGUI::setEncryptionStatus(int status)
